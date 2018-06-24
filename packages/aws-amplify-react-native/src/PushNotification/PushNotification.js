@@ -29,7 +29,7 @@ export default class PushNotification {
         }
         this.handlers = [];
         this.updateEndpoint = this.updateEndpoint.bind(this);
-        this.handleCampaignPush = this.handleCampaignPush.bind(this)
+        this.handleCampaignPush = this.handleCampaignPush.bind(this);
     }
 
     configure(config) {
@@ -46,17 +46,16 @@ export default class PushNotification {
         conf.region = 'us-east-1';
         this._config = Object.assign({}, this._config, conf);
 
-        if (Platform.OS === 'android') this.initializeAndroid();
-        else if (Platform.OS === 'ios') this.initializeIOS();
+        if (Platform.OS === 'android') this.initializeAndroid();else if (Platform.OS === 'ios') this.initializeIOS();
     }
 
     onNotification(handler) {
         if (typeof handler === 'function') {
             //check platform
-            if ( Platform.OS === 'ios' ) {
+            if (Platform.OS === 'ios') {
                 this.addEventListenerForIOS(REMOTE_NOTIFICATION_RECEIVED, handler);
             } else {
-                this.addEventListenerForAndroid(REMOTE_NOTIFICATION_RECEIVED, handler);   
+                this.addEventListenerForAndroid(REMOTE_NOTIFICATION_RECEIVED, handler);
             }
         }
     }
@@ -64,10 +63,10 @@ export default class PushNotification {
     onRegister(handler) {
         if (typeof handler === 'function') {
             //check platform
-            if ( Platform.OS === 'ios' ) {
+            if (Platform.OS === 'ios') {
                 this.addEventListenerForIOS(REMOTE_TOKEN_RECEIVED, handler);
             } else {
-                this.addEventListenerForAndroid(REMOTE_TOKEN_RECEIVED, handler);   
+                this.addEventListenerForAndroid(REMOTE_TOKEN_RECEIVED, handler);
             }
         }
     }
@@ -92,7 +91,7 @@ export default class PushNotification {
         if (Platform.OS === 'ios') {
             message = this.parseMessageFromIOS(message);
         }
-        const campaign = message && message.data && message.data.pinpoint ? message.data.pinpoint.campaign: null;
+        const campaign = message && message.data && message.data.pinpoint ? message.data.pinpoint.campaign : null;
 
         if (!campaign) {
             logger.debug('no message received for campaign push');
@@ -101,12 +100,12 @@ export default class PushNotification {
 
         const attributes = {
             campaign_activity_id: campaign['campaign_activity_id'],
-            isAppInForeground: message.foreground? 'true' : 'false',
+            isAppInForeground: message.foreground ? 'true' : 'false',
             treatment_id: campaign['treatment_id'],
             campaign_id: campaign['campaign_id']
-        }
+        };
 
-        const eventType = (message.foreground)?'_campaign.received_foreground':'_campaign.received_background';
+        const eventType = message.foreground ? '_campaign.received_foreground' : '_campaign.received_background';
 
         Analytics.record(eventType, attributes);
     }
@@ -120,15 +119,15 @@ export default class PushNotification {
         const { appId } = this._config;
         const cacheKey = 'push_token' + appId;
         logger.debug('update endpoint in push notification', token);
-        AsyncStorage.getItem(cacheKey).then((lastToken) => {
+        AsyncStorage.getItem(cacheKey).then(lastToken => {
             if (!lastToken || lastToken !== token) {
                 logger.debug('refresh the device token with', token);
                 const config = {
                     Address: token,
                     OptOut: 'NONE'
-                }
-                Analytics.updateEndpoint(config).then((data) => {
-                    logger.debug('update endpoint success, setting token into cache')
+                };
+                Analytics.updateEndpoint(config).then(data => {
+                    logger.debug('update endpoint success, setting token into cache');
                     AsyncStorage.setItem(cacheKey, token);
                 }).catch(e => {
                     return;
@@ -149,7 +148,7 @@ export default class PushNotification {
                 return;
             }
             if (event === REMOTE_TOKEN_RECEIVED) {
-                const dataObj = data.dataJSON? JSON.parse(data.dataJSON) : {};
+                const dataObj = data.dataJSON ? JSON.parse(data.dataJSON) : {};
                 handler(dataObj.refreshToken);
                 return;
             }
@@ -169,7 +168,7 @@ export default class PushNotification {
     }
 
     parseMessagefromAndroid(message) {
-        const dataObj = message.dataJSON? JSON.parse(message.dataJSON) : null;
+        const dataObj = message.dataJSON ? JSON.parse(message.dataJSON) : null;
         if (!dataObj) {
             logger.debug('no notification payload received');
             return dataObj;
@@ -184,7 +183,9 @@ export default class PushNotification {
                 treatment_id: dataPayload['pinpoint.campaign.treatment_id']
             };
             const pinpoint = {
-                campaign
+                campaign,
+                deeplink: dataPayload['pinpoint.deeplink'],
+                url: dataPayload['pinpoint.url'],
             };
             ret = {
                 title: dataPayload['pinpoint.notification.title'],
@@ -193,14 +194,14 @@ export default class PushNotification {
                     pinpoint
                 },
                 foreground: dataObj.foreground
-            }
+            };
         }
         return ret;
     }
 
     parseMessageFromIOS(message) {
-        const _data = message && message._data? message._data : null;
-        const _alert = message && message._alert? message._alert: {};
+        const _data = message && message._data ? message._data : null;
+        const _alert = message && message._alert ? message._alert : {};
 
         if (!_data && !_alert) {
             logger.debug('no notification payload received');
@@ -214,7 +215,7 @@ export default class PushNotification {
             title,
             body,
             data
-        }
+        };
         return ret;
     }
 }
